@@ -1,0 +1,50 @@
+---
+title: "hw02"
+author: "Guangyu Liu"
+date: "2017-03-17"
+output: html_document
+---
+
+```{r}
+count(gun_deaths, month) %>%
+  arrange(desc(n)) %>%
+  kable(caption = "Gun deaths in the United States by month", 
+        col.names = c("month", "Number of death"))
+```
+
+2. Most common intent in gun deaths
+```{r}
+ggplot(gun_deaths, mapping = aes(intent)) +
+  geom_bar()
+```
+
+3. The average age of females killed by guns
+```{r}
+gun_deaths %>%
+  filter(sex == "F") %>%
+  summarize(avgage = mean(age, na.rm = TRUE))
+```
+
+4. The number of white males with at least a high school education killed by gun
+```{r}
+gun_deaths %>%
+  filter(sex == "M" & education != "Less than HS" & race == "White" & year == 2012) %>%
+  count()
+```
+
+5. Season of most gun deaths
+```{r}
+season <- cut(gun_deaths$month, breaks = 4, label = c("Winter", "Spring", "Summer", "Fall"))
+mutate(gun_deaths, season) %>%
+  count(season) %>%
+  kable(caption = "Gun deaths in the United States by season", 
+        col.names = c("Season", "Number of death"))
+```
+
+6. Relationship between race and intent
+```{r}
+ggplot(gun_deaths, mapping = aes(race, fill = intent)) +
+  geom_bar(position = "dodge")
+```
+
+7. 
