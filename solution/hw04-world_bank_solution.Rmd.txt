@@ -1,0 +1,68 @@
+---
+title: "Exploring World Bank Data"
+author: "Benjamin Soltoff"
+date: "February 1, 2017"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+## Load necessary libraries
+
+```{r, echo = TRUE}
+library(tidyverse)
+```
+
+## Write a function to import the data files
+
+```{r}
+import_wb <- function(country_file){
+  read_csv(country_file,
+           skip = 4) %>%
+    # drop fake column X62 and Indicator Name
+    select(-X62) %>%
+    # rename columns
+    rename(country = `Country Name`,
+           country_code = `Country Code`,
+           indicator = `Indicator Name`,
+           indicator_code = `Indicator Code`) %>%
+    # gather columns
+    gather(year, value, -(country:indicator_code)) %>%
+    # spread back so each variable is its own column
+    select(-indicator) %>%
+    spread(indicator_code, value) %>%
+    # keep only a specific set of variables
+    select(country:year, NY.GDP.PCAP.CD, SE.ADT.LITR.ZS) %>%
+    rename(gdp_per_capita = NY.GDP.PCAP.CD,
+           adult_lit_rate = SE.ADT.LITR.ZS)
+}
+```
+
+## Import the data
+
+```{r}
+countries <- dir("data_world_bank", pattern = "\\.csv$", full.names = TRUE)
+wb_data <- vector("list", length(countries)) 
+
+for(i in seq_along(countries)){
+  wb_data[[i]] <- import_wb(countries[[i]])
+}
+
+## combine list into a single data frame
+wb_data_df <- bind_rows(wb_data)
+
+# run on all countries using a map function
+wb_data_df <- map_df(countries, import_wb)
+```
+
+## Explore the data
+
+## Session info
+
+```{r, echo = TRUE}
+devtools::session_info()
+```
+
+

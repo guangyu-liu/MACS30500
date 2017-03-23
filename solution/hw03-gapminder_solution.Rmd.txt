@@ -1,0 +1,76 @@
+---
+title: "Joining Gapminder Data"
+author: "Benjamin Soltoff"
+date: "January 25, 2017"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+# Get the original data
+
+```{r, echo = TRUE}
+library(tidyverse)
+library(gapminder)
+
+gapminder
+```
+
+# Import and tidy the HIV data
+
+```{r}
+(hiv <- read_csv("data/gapminder_hiv.csv") %>%
+  # rename country column
+  rename(country = `Estimated HIV Prevalence% - (Ages 15-49)`) %>%
+  # gather HIV variable into single column
+  gather(year, hivRate, -country, convert = TRUE) %>%
+  # fix hivRate to numeric variable
+  mutate(hivRate = as.numeric(hivRate)))
+```
+
+# What is the relationship between HIV prevalence and life expectancy?
+
+```{r}
+left_join(gapminder, hiv) %>%
+  ggplot(aes(hivRate, lifeExp)) +
+  geom_point() +
+  geom_smooth() +
+  scale_x_log10()
+```
+
+# Which continents have the most countries with missing HIV data?
+
+What I wanted all of you to do was practice using a **filtering join** such as `anti_join()` to obtain the rows in `gapminder` with no matching rows in `hiv`. My thought that was by importing and tidying `hiv`, the missing values for `hivRate` would be dropped or filtered out. Unfortunately, this is not what actually occurred.
+
+```{r}
+hiv
+```
+
+Clearly there are still missing values. So while this is what I intended you to do:
+
+```{r}
+anti_join(gapminder, hiv) %>%
+  ggplot(aes(continent)) +
+  geom_bar()
+```
+
+This is what you **actually** needed to do:
+
+```{r}
+gapminder %>%
+  left_join(hiv) %>%
+  filter(is.na(hivRate)) %>%
+  ggplot(aes(continent)) +
+  geom_bar()
+```
+
+
+## Session info
+
+```{r, echo = TRUE}
+devtools::session_info()
+```
+
+

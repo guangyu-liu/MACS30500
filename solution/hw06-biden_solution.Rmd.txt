@@ -1,0 +1,100 @@
+---
+title: "Sexy Joe Biden"
+author: "Benjamin Soltoff"
+date: "February 15, 2017"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+## Load necessary libraries
+
+```{r}
+library(tidyverse)
+library(modelr)
+library(broom)
+
+set.seed(1234)
+theme_set(theme_minimal())
+```
+
+## Import data
+
+```{r biden}
+biden <- read_csv("data/biden.csv")
+str(biden)
+```
+
+## Single variable model
+
+```{r biden-gender, dependson="biden-split"}
+biden_gender <- lm(biden ~ female, data = biden)
+tidy(biden_gender)
+```
+
+```{r biden-gender-pred, dependson="biden-gender"}
+biden %>%
+  as_tibble %>%
+  data_grid(female) %>%
+  add_predictions(biden_gender) %>%
+  mutate(female = factor(female, labels = c("Male", "Female"))) %>%
+  ggplot(aes(female, pred, group = 1)) +
+  geom_line() +
+  labs(title = "Linear relationship between gender and Joe Biden warmth",
+       x = NULL,
+       y = "Predicted feeling thermometer")
+```
+
+There appears to be a substantial relationship between gender and feelings towards Joe Biden.
+
+## Distribution of residuals
+
+```{r biden-gender-resid, dependson="biden-gender"}
+biden %>%
+  as_tibble %>%
+  add_residuals(biden_gender) %>%
+  mutate(pid = factor(pid, levels = 0:2,
+                      labels = c("Democrat", "Independent", "Republican"))) %>%
+  na.omit(pid) %>%
+  ggplot(aes(resid, color = pid)) +
+  geom_freqpoly()
+```
+
+It doesn't seem terrible. Could maybe do better.
+
+## Separate models for each party type
+
+```{r biden-gender-pid, dependson="biden-gender"}
+pid_models <- biden %>%
+  as_tibble %>%
+  mutate(pid = factor(pid, levels = 0:2,
+                      labels = c("Democrat", "Independent", "Republican"))) %>%
+  na.omit(pid) %>%
+  group_by(pid) %>%
+  nest() %>%
+  mutate(model = map(data, ~ lm(biden ~ female, data = .)),
+         coef = map(model, tidy))
+
+# compare results
+pid_models %>%
+  unnest(coef) %>%
+  ggplot(aes(term, estimate, color = pid,
+             ymin = estimate - 1.96 * std.error,
+             ymax = estimate + 1.96 * std.error)) +
+  geom_errorbar(position = "dodge") +
+  labs(title = "Comparison of separate models by PID for Biden warmth",
+       x = NULL,
+       y = "Parameter estimate")
+```
+
+Overall, Democratic men have higher warmth feelings towards Biden than independents or Republicans. For Democrats, gender does not appear to have a significant relationship with Biden attitudes - Democratic women are not more likely to have higher Biden thermometer ratings than Democratic men. For independents and Republicans, there appears to be a slight effect for gender.
+
+## Session info
+
+```{r}
+devtools::session_info()
+```
+
+

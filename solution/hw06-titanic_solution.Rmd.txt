@@ -1,0 +1,154 @@
+---
+title: "Predicting Deaths on the Titanic"
+author: "Benjamin Soltoff"
+date: "February 15, 2017"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+## Load necessary libraries
+
+```{r packages}
+library(tidyverse)
+library(titanic)
+library(modelr)
+library(broom)
+library(caret)
+library(rcfss)
+
+set.seed(1234)
+theme_set(theme_minimal())
+```
+
+## Prep data
+
+```{r titanic}
+titanic <- titanic_train %>%
+  as_tibble %>%
+  na.omit %>%
+  # prep variables for future work with random forest models
+  mutate(Survived = ifelse(Survived == 1, "Survived",
+                           ifelse(Survived == 0, "Died", NA)),
+         Survived = as.factor(Survived),
+         Sex = as.factor(Sex)) %>%
+  filter(!is.na(Survived), !is.na(Age)) %>%
+  resample_partition(c(test = 0.3, train = 0.7))
+```
+
+## Logistic regression models
+
+```{r titanic-log, dependson="titanic"}
+# age
+titanic_age <- glm(Survived ~ Age, data = titanic$train, family = binomial)
+tidy(titanic_age)
+
+# age + sex
+titanic_age_woman <- glm(Survived ~ Age + Sex, data = titanic$train,
+                         family = binomial)
+tidy(titanic_age_woman)
+
+# age * sex
+titanic_age_woman_x <- glm(Survived ~ Age * Sex, data = titanic$train,
+                           family = binomial)
+tidy(titanic_age_woman_x)
+```
+
+## Estimate accuracy rates for logistic regression models
+
+```{r titanic-logit-accuracy, dependson="titanic-log"}
+# store models in a list for iteration
+models_logit <- list("age" = titanic_age,
+                     "age_woman" = titanic_age_woman,
+                     "age_woman_x" = titanic_age_woman_x)
+
+# function to calculate accuracy rate
+titanic_accuracy <- function(model){
+  accuracy <- titanic$test %>%
+    as_tibble %>%
+    add_predictions(model) %>%
+    mutate(pred = logit2prob(pred),
+           pred = as.numeric(pred > .5))
+  
+  mean(as.numeric(accuracy$Survived) - 1 == accuracy$pred, na.rm = TRUE)
+}
+
+# apply to all the models
+(models_logit_rate <- models_logit %>%
+  map_dbl(titanic_accuracy))
+```
+
+## Estimate random forest models
+
+```{r titanic-rf, dependson="titanic"}
+# age
+titanic_rf_age <- train(Survived ~ Age,
+                        data = as_tibble(titanic$train),
+                        method = "rf",
+                        ntree = 500,
+                        trControl = trainControl(method = "oob"))
+titanic_rf_age
+
+# age + sex
+titanic_rf_age_woman <- train(Survived ~ Age + Sex,
+                              data = as_tibble(titanic$train),
+                              method = "rf",
+                              ntree = 500,
+                              trControl = trainControl(method = "oob"))
+titanic_rf_age_woman
+
+# age * sex
+titanic_rf_age_woman_x <- train(Survived ~ Age * Sex,
+                                data = as_tibble(titanic$train),
+                                method = "rf",
+                                ntree = 500,
+                                trControl = trainControl(method = "oob"))
+titanic_rf_age_woman_x
+```
+
+## Generate variable importance plots
+
+```{r titanic-rf-varimp, dependson="titanic-rf"}
+# store models in a list for iteration
+models_rf <- list("age" = titanic_rf_age,
+                  "age_woman" = titanic_rf_age_woman,
+                  "age_woman_x" = titanic_rf_age_woman_x)
+
+map(models_rf, ~ varImpPlot(.$finalModel))
+```
+
+## Estimate accuracy rates for random forest models
+
+```{r titanic-rf-accuracy, dependson="titanic-rf"}
+# function to calculate accuracy rate for random forest
+titanic_accuracy_rf <- function(model){
+  accuracy <- titanic$test %>%
+    as_tibble %>%
+    bind_cols(predict(model, newdata = as_tibble(titanic$test), type = "prob") %>%
+              rename(prob_dead = Died,
+                     prob_survive = Survived)) %>%
+    mutate(pred = as.numeric(prob_survive > .5))
+  
+  mean(as.numeric(accuracy$Survived) - 1 == accuracy$pred, na.rm = TRUE)
+}
+
+(models_rf_rate <- models_rf %>%
+  map_dbl(titanic_accuracy_rf))
+```
+
+## Compare accuracy rates for logistic regression and random forest models
+
+```{r titanic-compare-methods, dependson=c("titanic-logit-accuracy", "titanic-rf-accuracy")}
+data_frame(logit = models_logit_rate,
+           rf = models_rf_rate)
+```
+
+## Session info
+
+```{r}
+devtools::session_info()
+```
+
+

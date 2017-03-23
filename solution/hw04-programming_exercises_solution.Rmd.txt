@@ -1,0 +1,131 @@
+---
+title: "Programming Exercises"
+author: "Benjamin Soltoff"
+date: "February 1, 2017"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+## Load necessary libraries
+
+```{r, echo = TRUE}
+library(tidyverse)
+```
+
+## Compute the number of unique values in each column of `iris`
+
+### Using a `for` loop
+
+```{r}
+output <- vector("double", ncol(iris))
+
+for(i in seq_along(iris)){
+  output[[i]] <- length(unique(iris[[i]]))
+}
+
+output
+
+# using n_distinct()
+output <- vector("double", ncol(iris))
+
+for(i in seq_along(iris)){
+  output[[i]] <- n_distinct(iris[[i]])
+}
+
+output
+
+```
+
+### Using a `map` function
+
+```{r}
+iris %>%
+  map(unique) %>%
+  map_dbl(length)
+
+# using n_distinct()
+iris %>%
+  map_dbl(n_distinct)
+```
+
+## Calculate the square of each element in vector `x`
+
+```{r}
+x <- 1:30
+x
+```
+
+### Using a `for` loop
+
+```{r}
+output <- vector("integer", length(x))
+
+for(i in seq_along(x)){
+  output[[i]] <- x[[i]]^2
+}
+
+output
+```
+
+### Using a `map` function
+
+```{r}
+# traditional anonymous function
+map_dbl(x, function(x) x^2)
+
+# the purrr way using a one-sided formula
+map_dbl(x, ~ .^2)
+```
+
+
+## Write a function to calculate length of sides in a right-triangle using the Pythagorean Theorem
+
+```{r}
+pythagorean <- function(a = NULL, b = NULL, c = NULL){
+  # combine all parameters together
+  sides <- sort(c(a, b, c))
+  
+  # check if we only have two sides provided
+  if(length(sides) == 3){
+    stop("You have provided lengths for all three sides. Only provide the length for two sides.")
+  } else if(length(sides) == 1){
+    stop("You have provided lengths for less than two sides. Only provide the length for two sides.")
+  }
+  
+  # check to make sure all values are numeric
+  if(!is_numeric(sides)){
+    stop("At least one argument is not numeric. Only provide numbers.")
+  }
+  
+  # now perform the calculations
+  if(!is_null(a) && !is_null(b)){
+    sqrt(sides[1]^2 + sides[2]^2)
+  } else if(!is_null(a) && !is_null(c)){
+    sqrt(sides[2]^2 - sides[1]^2)
+  } else if(!is_null(b) && !is_null(c)){
+    sqrt(sides[2]^2 - sides[1]^2)
+  }
+}
+```
+
+```{r, echo = TRUE, error = TRUE}
+pythagorean(a = 3, b = 4)
+pythagorean(b = 4, c = 5)
+pythagorean(a = 3, c = 5)
+pythagorean(a = 5, c = 3)
+pythagorean(a = 3, b = 4, c = 5)
+pythagorean(a = 3)
+pythagorean(a = 3, b = "4")
+```
+
+
+## Session info
+
+```{r, echo = TRUE}
+devtools::session_info()
+```
+
+

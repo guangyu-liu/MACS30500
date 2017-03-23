@@ -1,0 +1,37 @@
+---
+title: "Tidying `dadmom`"
+author: "Benjamin Soltoff"
+date: "January 25, 2017"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set()
+```
+
+# Get the data
+
+```{r}
+library(tidyverse)
+library(rcfss)
+
+data("dadmom")
+dadmom
+```
+
+# Tidied data
+
+```{r}
+dadmom %>%
+  gather(key, value, named:incm) %>%
+  separate(key, c("variable", "type"), sep = -2) %>%
+  spread(variable, value, convert = TRUE)
+```
+
+## Session info
+
+```{r, echo = TRUE}
+devtools::session_info()
+```
+
+

@@ -1,0 +1,535 @@
+Exploring Gun Deaths in America
+================
+Benjamin Soltoff
+January 18th, 2017
+
+Get the data
+------------
+
+``` r
+library(tidyverse)    # load tidyverse packages, including ggplot2
+```
+
+    ## Loading tidyverse: ggplot2
+    ## Loading tidyverse: tibble
+    ## Loading tidyverse: tidyr
+    ## Loading tidyverse: readr
+    ## Loading tidyverse: purrr
+    ## Loading tidyverse: dplyr
+
+    ## Conflicts with tidy packages ----------------------------------------------
+
+    ## filter(): dplyr, stats
+    ## lag():    dplyr, stats
+
+``` r
+library(knitr)        # load functions for formatting tables
+
+# get data from rcfss package
+# install latest version if not already installed
+# devtools::install_github("uc-cfss/rcfss")
+library(rcfss)
+
+# load the data
+data("gun_deaths")
+gun_deaths
+```
+
+    ## # A tibble: 100,798 × 10
+    ##       id  year month       intent police   sex   age
+    ##    <int> <int> <dbl>        <chr>  <int> <chr> <int>
+    ## 1      1  2012     1      Suicide      0     M    34
+    ## 2      2  2012     1      Suicide      0     F    21
+    ## 3      3  2012     1      Suicide      0     M    60
+    ## 4      4  2012     2      Suicide      0     M    64
+    ## 5      5  2012     2      Suicide      0     M    31
+    ## 6      6  2012     2      Suicide      0     M    17
+    ## 7      7  2012     2 Undetermined      0     M    48
+    ## 8      8  2012     3      Suicide      0     M    41
+    ## 9      9  2012     2   Accidental      0     M    50
+    ## 10    10  2012     2      Suicide      0     M    NA
+    ## # ... with 100,788 more rows, and 3 more variables: race <chr>,
+    ## #   place <chr>, education <fctr>
+
+In what month do the most gun deaths occur?
+-------------------------------------------
+
+``` r
+gun_deaths %>%
+  count(month) %>%
+  kable(caption = "Gun Deaths, by Month (2012-2014)",
+        col.names = c("Month", "Number of Deaths"))
+```
+
+|  Month|  Number of Deaths|
+|------:|-----------------:|
+|      1|              8273|
+|      2|              7093|
+|      3|              8289|
+|      4|              8455|
+|      5|              8669|
+|      6|              8677|
+|      7|              8989|
+|      8|              8783|
+|      9|              8508|
+|     10|              8406|
+|     11|              8243|
+|     12|              8413|
+
+### With a bar chart
+
+``` r
+gun_deaths %>%
+  mutate(month = factor(month, labels = month.abb)) %>%
+  ggplot(aes(month)) +
+  geom_bar() +
+  labs(title = "Gun Deaths in the United States (2012-2014)",
+       x = "Month",
+       y = "Number of gun deaths")
+```
+
+![](gun_deaths_solution_files/figure-markdown_github/unnamed-chunk-3-1.png)
+
+### With a line chart
+
+``` r
+gun_deaths %>%
+  mutate(month = factor(month, labels = month.abb)) %>%
+  count(month) %>%
+  ggplot(aes(month, n, group = 1)) +
+  geom_line() +
+  scale_y_continuous(limits = c(0, NA)) +
+  labs(title = "Gun Deaths in the United States (2012-2014)",
+       x = "Month",
+       y = "Number of gun deaths")
+```
+
+![](gun_deaths_solution_files/figure-markdown_github/unnamed-chunk-4-1.png)
+
+What is the most common intent in gun deaths? Do most people killed by guns die in suicides, homicides, or accidental shootings?
+--------------------------------------------------------------------------------------------------------------------------------
+
+``` r
+gun_deaths %>%
+  count(intent) %>%
+  kable(caption = "Gun Deaths, by Intent (2012-2014)",
+        col.names = c("Intent of Shooting", "Number of Deaths"))
+```
+
+| Intent of Shooting |  Number of Deaths|
+|:-------------------|-----------------:|
+| Accidental         |              1639|
+| Homicide           |             35176|
+| Suicide            |             63175|
+| Undetermined       |               807|
+| NA                 |                 1|
+
+``` r
+gun_deaths %>%
+  count(intent) %>%
+  filter(!is.na(intent)) %>%
+  arrange(-n) %>%
+  mutate(intent = factor(intent, levels = intent)) %>%
+  ggplot(aes(intent, n)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Gun Deaths in the United States (2012-2014)",
+       x = "Intent of death",
+       y = "Number of gun deaths")
+```
+
+![](gun_deaths_solution_files/figure-markdown_github/unnamed-chunk-5-1.png)
+
+What is the average age of females killed by guns?
+--------------------------------------------------
+
+``` r
+gun_deaths %>%
+  group_by(sex) %>%
+  summarize(mean = mean(age, na.rm = TRUE)) %>%
+  mutate(sex = factor(sex, levels = c("F", "M"), labels = c("Female", "Male"))) %>%
+  kable(caption = "Average Age of Gun Death victim, by Sex (2012-2014)",
+        col.names = c("Sex", "Average Age"),
+        digits = 2)
+```
+
+| Sex    |  Average Age|
+|:-------|------------:|
+| Female |        43.70|
+| Male   |        43.88|
+
+### Using a bar graph
+
+``` r
+gun_deaths %>%
+  group_by(sex) %>%
+  summarize(mean = mean(age, na.rm = TRUE)) %>%
+  ggplot(aes(sex, mean)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Gun Deaths in the United States (2012-2014)",
+       x = "Sex of victim",
+       y = "Age of victim")
+```
+
+![](gun_deaths_solution_files/figure-markdown_github/unnamed-chunk-7-1.png)
+
+### Using a boxplot
+
+``` r
+gun_deaths %>%
+  mutate(sex = factor(sex, levels = c("F", "M"),
+                      labels = c("Female", "Male"))) %>%
+  ggplot(aes(sex, age)) +
+  geom_boxplot() +
+  labs(title = "Gun Deaths in the United States (2012-2014)",
+       x = "Sex of victim",
+       y = "Age of victim")
+```
+
+    ## Warning: Removed 18 rows containing non-finite values (stat_boxplot).
+
+![](gun_deaths_solution_files/figure-markdown_github/unnamed-chunk-8-1.png)
+
+### Using a violin plot
+
+``` r
+gun_deaths %>%
+  mutate(sex = factor(sex, levels = c("F", "M"),
+                      labels = c("Female", "Male"))) %>%
+  ggplot(aes(sex, age)) +
+  geom_violin() +
+  labs(title = "Gun Deaths in the United States (2012-2014)",
+       x = "Sex of victim",
+       y = "Age of victim")
+```
+
+    ## Warning: Removed 18 rows containing non-finite values (stat_ydensity).
+
+![](gun_deaths_solution_files/figure-markdown_github/unnamed-chunk-9-1.png)
+
+### Using a [letter-value boxplot](https://github.com/hadley/lvplot)
+
+``` r
+library(lvplot)
+
+gun_deaths %>%
+  mutate(sex = factor(sex, levels = c("F", "M"),
+                      labels = c("Female", "Male"))) %>%
+  ggplot(aes(sex, age)) +
+  geom_lv() +
+  labs(title = "Gun Deaths in the United States (2012-2014)",
+       x = "Sex of victim",
+       y = "Age of victim")
+```
+
+![](gun_deaths_solution_files/figure-markdown_github/unnamed-chunk-10-1.png)
+
+How many white males with at least a high school education were killed by guns in 2012?
+---------------------------------------------------------------------------------------
+
+``` r
+n_deaths <- gun_deaths %>%
+  filter(race == "White",
+         sex == "M",
+         year == 2012,
+         education != "Less than HS")
+```
+
+There were 15199 white males with at least a high school education killed by guns in 2012.
+
+Which season of the year has the most gun deaths?
+-------------------------------------------------
+
+Assume that:
+
+-   Winter = January-March
+-   Spring = April-June
+-   Summer = July-September
+-   Fall = October-December
+
+``` r
+gun_deaths <- gun_deaths %>%
+  mutate(season = cut(month, c(0, 3, 6, 9, 12),
+                      labels = c("Winter", "Spring", "Summer", "Fall")))
+
+gun_deaths %>%
+  count(season) %>%
+  kable(caption = "Gun Deaths, by Season (2012-2014)",
+        col.names = c("Season", "Number of Deaths"))
+```
+
+| Season |  Number of Deaths|
+|:-------|-----------------:|
+| Winter |             23655|
+| Spring |             25801|
+| Summer |             26280|
+| Fall   |             25062|
+
+``` r
+ggplot(gun_deaths, aes(season)) +
+  geom_bar() +
+  labs(title = "Gun Deaths in the United States (2012-2014)",
+       x = "Season",
+       y = "Number of gun deaths")
+```
+
+![](gun_deaths_solution_files/figure-markdown_github/unnamed-chunk-12-1.png)
+
+What is the relationship between race and intent?
+=================================================
+
+For example, are whites who are killed by guns more likely to die because of suicide or homicide? How does this compare to blacks and hispanics?
+
+``` r
+gun_deaths %>%
+  count(race, intent) %>%
+  kable(caption = "Gun Deaths, by Race and Intent (2012-2014)",
+        col.names = c("Race of Victim", "Intent of Shooting", "Number of Deaths"))
+```
+
+| Race of Victim                 | Intent of Shooting |  Number of Deaths|
+|:-------------------------------|:-------------------|-----------------:|
+| Asian/Pacific Islander         | Accidental         |                12|
+| Asian/Pacific Islander         | Homicide           |               559|
+| Asian/Pacific Islander         | Suicide            |               745|
+| Asian/Pacific Islander         | Undetermined       |                10|
+| Black                          | Accidental         |               328|
+| Black                          | Homicide           |             19510|
+| Black                          | Suicide            |              3332|
+| Black                          | Undetermined       |               126|
+| Hispanic                       | Accidental         |               145|
+| Hispanic                       | Homicide           |              5634|
+| Hispanic                       | Suicide            |              3171|
+| Hispanic                       | Undetermined       |                72|
+| Native American/Native Alaskan | Accidental         |                22|
+| Native American/Native Alaskan | Homicide           |               326|
+| Native American/Native Alaskan | Suicide            |               555|
+| Native American/Native Alaskan | Undetermined       |                14|
+| White                          | Accidental         |              1132|
+| White                          | Homicide           |              9147|
+| White                          | Suicide            |             55372|
+| White                          | Undetermined       |               585|
+| White                          | NA                 |                 1|
+
+An okay graph
+-------------
+
+``` r
+ggplot(gun_deaths, aes(race, fill = intent)) +
+  geom_bar() +
+  coord_flip() +
+  labs(title = "Gun Deaths in the United States (2012-2014)",
+       x = "Race of victim",
+       y = "Percent of gun death victims",
+       fill = "Intent")
+```
+
+![](gun_deaths_solution_files/figure-markdown_github/unnamed-chunk-14-1.png)
+
+A better graph
+--------------
+
+``` r
+gun_deaths %>%
+  mutate(race = factor(race, levels = rev(sort(unique(race))))) %>%
+  ggplot(aes(race, fill = intent)) +
+  geom_bar(position = "fill") +
+  coord_flip() +
+  labs(title = "Gun Deaths in the United States (2012-2014)",
+       x = "Race of victim",
+       y = "Percent of gun death victims",
+       fill = "Intent") +
+  scale_y_continuous(label = scales::percent) +
+  theme(legend.position = "bottom")
+```
+
+![](gun_deaths_solution_files/figure-markdown_github/unnamed-chunk-15-1.png)
+
+Are police-involved gun deaths significantly different from other gun deaths? Assess the relationship between police involvement and age, police involvement and race, and the intersection of all three variables.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+``` r
+# label police involvement
+gun_deaths <- gun_deaths %>%
+  mutate(police = factor(police, levels = c(1:0), labels = c("Police involved",
+                                                             "No police involved")))
+
+# police and age
+gun_deaths %>%
+  count(police, age)
+```
+
+    ## Source: local data frame [172 x 3]
+    ## Groups: police [?]
+    ## 
+    ##             police   age     n
+    ##             <fctr> <int> <int>
+    ## 1  Police involved    12     1
+    ## 2  Police involved    13     1
+    ## 3  Police involved    14     1
+    ## 4  Police involved    15     5
+    ## 5  Police involved    16     7
+    ## 6  Police involved    17    13
+    ## 7  Police involved    18    24
+    ## 8  Police involved    19    28
+    ## 9  Police involved    20    34
+    ## 10 Police involved    21    43
+    ## # ... with 162 more rows
+
+``` r
+ggplot(gun_deaths, aes(police, age)) +
+  geom_boxplot() +
+  labs(title = "Gun Deaths in the United States (2012-2014)",
+       x = NULL,
+       y = "Age of victim")
+```
+
+    ## Warning: Removed 18 rows containing non-finite values (stat_boxplot).
+
+![](gun_deaths_solution_files/figure-markdown_github/unnamed-chunk-16-1.png)
+
+``` r
+# police and race
+gun_deaths %>%
+  count(police, race)
+```
+
+    ## Source: local data frame [10 x 3]
+    ## Groups: police [?]
+    ## 
+    ##                police                           race     n
+    ##                <fctr>                          <chr> <int>
+    ## 1     Police involved         Asian/Pacific Islander    30
+    ## 2     Police involved                          Black   356
+    ## 3     Police involved                       Hispanic   282
+    ## 4     Police involved Native American/Native Alaskan    25
+    ## 5     Police involved                          White   709
+    ## 6  No police involved         Asian/Pacific Islander  1296
+    ## 7  No police involved                          Black 22940
+    ## 8  No police involved                       Hispanic  8740
+    ## 9  No police involved Native American/Native Alaskan   892
+    ## 10 No police involved                          White 65528
+
+``` r
+ggplot(gun_deaths, aes(police, fill = race)) +
+  geom_bar(position = "fill") +
+  scale_y_continuous(label = scales::percent) +
+  labs(title = "Gun Deaths in the United States (2012-2014)",
+       x = NULL,
+       y = "Percent of gun death victims",
+       fill = "Race of victim")
+```
+
+![](gun_deaths_solution_files/figure-markdown_github/unnamed-chunk-16-2.png)
+
+``` r
+# police, race, and age
+gun_deaths %>%
+  count(police, race, age)
+```
+
+    ## Source: local data frame [671 x 4]
+    ## Groups: police, race [?]
+    ## 
+    ##             police                   race   age     n
+    ##             <fctr>                  <chr> <int> <int>
+    ## 1  Police involved Asian/Pacific Islander    19     1
+    ## 2  Police involved Asian/Pacific Islander    20     1
+    ## 3  Police involved Asian/Pacific Islander    21     3
+    ## 4  Police involved Asian/Pacific Islander    22     4
+    ## 5  Police involved Asian/Pacific Islander    25     2
+    ## 6  Police involved Asian/Pacific Islander    27     3
+    ## 7  Police involved Asian/Pacific Islander    29     1
+    ## 8  Police involved Asian/Pacific Islander    31     1
+    ## 9  Police involved Asian/Pacific Islander    32     1
+    ## 10 Police involved Asian/Pacific Islander    34     2
+    ## # ... with 661 more rows
+
+``` r
+gun_deaths %>%
+  mutate(race = factor(race, levels = rev(sort(unique(race))))) %>%
+  ggplot(aes(race, age, fill = police)) +
+  geom_boxplot() +
+  coord_flip() +
+  labs(title = "Gun Deaths in the United States (2012-2014)",
+       x = "Race of victim",
+       y = "Age of victim",
+       fill = "Shooting type") +
+  theme(legend.position = "bottom")
+```
+
+    ## Warning: Removed 18 rows containing non-finite values (stat_boxplot).
+
+![](gun_deaths_solution_files/figure-markdown_github/unnamed-chunk-16-3.png)
+
+``` r
+gun_deaths %>%
+  ggplot(aes(police, age, fill = race)) +
+  geom_boxplot() +
+  labs(title = "Gun Deaths in the United States (2012-2014)",
+       x = "Shooting type",
+       y = "Age of victim",
+       fill = "Race of victim") +
+  scale_fill_discrete(guide = guide_legend(nrow = 2)) +
+  theme(legend.position = "bottom")
+```
+
+    ## Warning: Removed 18 rows containing non-finite values (stat_boxplot).
+
+![](gun_deaths_solution_files/figure-markdown_github/unnamed-chunk-16-4.png)
+
+Session info
+------------
+
+``` r
+devtools::session_info()
+```
+
+    ## Session info --------------------------------------------------------------
+
+    ##  setting  value                       
+    ##  version  R version 3.3.2 (2016-10-31)
+    ##  system   x86_64, darwin13.4.0        
+    ##  ui       X11                         
+    ##  language (EN)                        
+    ##  collate  en_US.UTF-8                 
+    ##  tz       America/Chicago             
+    ##  date     2017-01-23
+
+    ## Packages ------------------------------------------------------------------
+
+    ##  package    * version    date       source                        
+    ##  assertthat   0.1        2013-12-06 CRAN (R 3.3.0)                
+    ##  backports    1.0.4      2016-10-24 CRAN (R 3.3.0)                
+    ##  colorspace   1.3-2      2016-12-14 CRAN (R 3.3.2)                
+    ##  DBI          0.5-1      2016-09-10 CRAN (R 3.3.0)                
+    ##  devtools     1.12.0     2016-06-24 CRAN (R 3.3.0)                
+    ##  digest       0.6.11     2017-01-03 CRAN (R 3.3.2)                
+    ##  dplyr      * 0.5.0      2016-06-24 CRAN (R 3.3.0)                
+    ##  evaluate     0.10       2016-10-11 CRAN (R 3.3.0)                
+    ##  ggplot2    * 2.2.1      2016-12-30 CRAN (R 3.3.2)                
+    ##  gtable       0.2.0      2016-02-26 CRAN (R 3.3.0)                
+    ##  highr        0.6        2016-05-09 CRAN (R 3.3.0)                
+    ##  htmltools    0.3.5      2016-03-21 CRAN (R 3.3.0)                
+    ##  knitr      * 1.15.1     2016-11-22 cran (@1.15.1)                
+    ##  labeling     0.3        2014-08-23 CRAN (R 3.3.0)                
+    ##  lazyeval     0.2.0      2016-06-12 CRAN (R 3.3.0)                
+    ##  lvplot     * 0.2.0.9000 2017-01-06 Github (hadley/lvplot@8ce61c7)
+    ##  magrittr     1.5        2014-11-22 CRAN (R 3.3.0)                
+    ##  memoise      1.0.0      2016-01-29 CRAN (R 3.3.0)                
+    ##  munsell      0.4.3      2016-02-13 CRAN (R 3.3.0)                
+    ##  plyr         1.8.4      2016-06-08 CRAN (R 3.3.0)                
+    ##  purrr      * 0.2.2      2016-06-18 CRAN (R 3.3.0)                
+    ##  R6           2.2.0      2016-10-05 CRAN (R 3.3.0)                
+    ##  rcfss      * 0.1.0      2017-01-17 local                         
+    ##  Rcpp         0.12.8     2016-11-17 CRAN (R 3.3.2)                
+    ##  readr      * 1.0.0      2016-08-03 CRAN (R 3.3.0)                
+    ##  rmarkdown    1.3        2016-12-21 CRAN (R 3.3.2)                
+    ##  rprojroot    1.1        2016-10-29 CRAN (R 3.3.0)                
+    ##  scales       0.4.1      2016-11-09 CRAN (R 3.3.1)                
+    ##  stringi      1.1.2      2016-10-01 CRAN (R 3.3.0)                
+    ##  stringr      1.1.0      2016-08-19 cran (@1.1.0)                 
+    ##  tibble     * 1.2        2016-08-26 cran (@1.2)                   
+    ##  tidyr      * 0.6.0      2016-08-12 CRAN (R 3.3.0)                
+    ##  tidyverse  * 1.0.0      2016-09-09 CRAN (R 3.3.0)                
+    ##  withr        1.0.2      2016-06-20 CRAN (R 3.3.0)                
+    ##  yaml         2.1.14     2016-11-12 cran (@2.1.14)
