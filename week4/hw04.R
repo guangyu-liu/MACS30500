@@ -37,29 +37,35 @@ map_dbl(x, sq)
 pythagorean <- function (a = NULL, b = NULL, c = NULL){
   if ((!is.numeric(a) & !is.null(a)) | (!is.numeric(b) & !is.null(b)) | (!is.numeric(c)) & !is.null(c))
     stop("non numeric arguments")
+  if ((is.null(a) + is.null(b) + is.null(c)) != 1)
+    stop("function pythagorean only accept two arguments")
   if (!is.null(a) & !is.null(b) & is.null(c)){
-    if (a < 0 | b < 0)
+    if (a <= 0 | b <= 0)
       stop("length of side of triangle should be positive")
-    return(paste0("c = ",sqrt(a^2+b^2)))
+    c = sqrt(a^2+b^2)
+    return(paste0("c = ",sqrt(a^2+b^2), " two angles are ", asin(a/c)*180/pi, ", and ", asin(b/c)*180/pi))
   }
-  if (!is.null(a) & is.null(b) & !is.null(c)){
-    if (a < 0 | c < 0)
+  else if (!is.null(a) & is.null(b) & !is.null(c)){
+    if (a <= 0 | c <= 0)
       stop("length of side of triangle should be positive")
-    if (c > a)
-      return(paste0("b = ",sqrt(c^2-a^2)))
+    if (c > a){
+      b = sqrt(c^2-a^2)
+      return(paste0("b = ",sqrt(c^2-a^2), " two angles are ", asin(a/c)*180/pi, ", and ", asin(b/c)*180/pi))
+    }
     else
       stop("the hypotenuse should be greater than the right side")
   }
-  if (is.null(a) & !is.null(b) & !is.null(c)){
+  else{
     if (c < 0 | b < 0)
       stop("length of side of triangle should be positive")
-    if (c > b)
-      return(paste0("a = ",sqrt(c^2-b^2)))
+    if (c > b){
+      a = sqrt(c^2 - b^2)
+      return(paste0("a = ",sqrt(c^2-b^2), " two angles are ", asin(a/c)*180/pi, ", and ", asin(b/c)*180/pi))
+    }
     else
       stop("the hypotenuse should be greater than the right side")
   }
-  stop("function pythagorean only accept two arguments")
 }
-pythagorean(-1, -2)
+pythagorean(b = 4, c = 5)
 
 # Part 2: Using programming in data analysis
