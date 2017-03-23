@@ -1,0 +1,87 @@
+---
+title: "hw04"
+author: "Guangyu Liu"
+date: "March 23, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Part 1: Programming exercises
+## 1. Compute the number of unique values in each column of iris
+### FOR loop:
+```{r}
+library(tidyverse)
+as_tibble(iris)
+uniqueValue <- vector(mode = "integer", length = ncol(iris))
+for (i in seq_along(iris)){
+  uniqueValue[i] <- n_distinct(iris[[i]])
+}
+names(uniqueValue) <- names(iris)
+uniqueValue
+```
+
+### MAP function:
+```{r}
+map_int(iris, n_distinct)
+```
+
+## 2. Calculate the square of each element in vector x
+```{r}
+x <- 1:30
+x
+```
+### FOR loop:
+```{r}
+square <- vector(mode = "integer", length = length(x))
+for (i in seq_along(x)){
+  square[i] <- x[i]^2
+}
+square
+```
+### MAP function:
+```{r}
+sq <- function(x){
+  x^2
+}
+map_dbl(x, sq)
+```
+
+## 3. Pythagorean theorm
+```{r}
+pythagorean <- function (a = NULL, b = NULL, c = NULL){
+  if ((!is.numeric(a) & !is.null(a)) | (!is.numeric(b) & !is.null(b)) | (!is.numeric(c)) & !is.null(c))
+    stop("non numeric arguments")
+  if (!is.null(a) & !is.null(b) & is.null(c)){
+    if (a < 0 | b < 0)
+      stop("length of side of triangle should be positive")
+    return(paste0("c = ",sqrt(a^2+b^2)))
+  }
+  if (!is.null(a) & is.null(b) & !is.null(c)){
+    if (a < 0 | c < 0)
+      stop("length of side of triangle should be positive")
+    if (c > a)
+      return(paste0("b = ",sqrt(c^2-a^2)))
+    else
+      stop("the hypotenuse should be greater than the right side")
+  }
+  if (is.null(a) & !is.null(b) & !is.null(c)){
+    if (c < 0 | b < 0)
+      stop("length of side of triangle should be positive")
+    if (c > b)
+      return(paste0("a = ",sqrt(c^2-b^2)))
+    else
+      stop("the hypotenuse should be greater than the right side")
+  }
+  stop("function pythagorean only accept two arguments")
+}
+```
+
+Call function pythagorean:
+```{r}
+pythagorean(3, 4)
+```
+
+# Part 2: Using programming in data analysis
