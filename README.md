@@ -1,1 +1,5 @@
-# MACS30500adding a line by silliest hhh
+---
+title: MACS 30500
+---
+
+### Self-taught R
