@@ -1,0 +1,33 @@
+---
+title: "A deep dive into R Markdown"
+author: "Guangyu Liu"
+date: "March 24, 2017"
+output: 
+  html_document:
+  toc: true
+  toc_depth: 3
+  theme: readable
+  highlight: pygments
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = TRUE)
+library(tidyverse)
+library(rcfss)
+```
+
+## Exploring how gun deaths vary by race
+### Question 2
+```{r}
+gun_deaths %>% 
+  ggplot(mapping = aes(x = race)) + 
+  geom_bar()
+youth <- gun_deaths %>% 
+  filter(age <= 65)
+```
+
+### Inline code
+We have data about `r nrow(gun_deaths)` individuals killed by guns.
+Only `r nrow(gun_deaths) - nrow(youth)` are older than 65.
+
+## YAML header
